@@ -192,6 +192,13 @@ ekeyboard(Rune k)
 				plumbsendtext(plumbfd, argv0, nil, pwd, m.n);
 		}
 		break;
+	case Kesc:
+		if(ninput > 0){
+			ninput = 0;
+			inputchanged();
+		}else
+			threadexitsall(nil);
+		break;
 	case Kbs:
 		if(ninput > 0){
 			ninput--;
@@ -204,7 +211,7 @@ ekeyboard(Rune k)
 			inputchanged();
 		}
 	default:
-		if(isalnum(k)){
+		if(isprint(k)){
 			input[ninput++] = (char)k; /* XXX */
 			inputchanged();
 		}
