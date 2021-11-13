@@ -25,6 +25,7 @@ enum
 Mousectl *mctl;
 Keyboardctl *kctl;
 Image *selbg;
+Image *mfg;
 Rectangle ir;
 Rectangle lr;
 int lh;
@@ -96,33 +97,37 @@ linerect(int i)
 
 	r.min.x = 0;
 	r.min.y = i * (font->height + Padding);
-	r.max.x = lr.max.x;
+	r.max.x = Dx(lr) - 2*Padding;
 	r.max.y = (i + 1) * (font->height + Padding);
 	r = rectaddpt(r, lr.min);
 	return r;
 }
 
 void
+drawline(int i, int sel)
+{
+	if(loff + i >= nmatches)
+		return;
+	draw(screen, linerect(i), sel ? selbg : display->white, nil, ZP);
+	string(screen, addpt(lr.min, Pt(0, i * lh)), display->black, ZP, font, matches[loff + i].n);
+}
+
+void
 redraw(void)
 {
+	char b[10] = {0};
 	Point p;
-	int i, n;
-	Match m;
+	int i;
 
 	draw(screen, screen->r, display->white, nil, ZP);
 	p = string(screen, addpt(screen->r.min, Pt(Padding, Padding)), display->black, ZP, font, "> ");
 	stringn(screen, p, display->black, ZP, font, input, ninput);
-
-	for(i = 0; i < lcount; i++){
-		n = loff + i;
-		if(n >= nmatches)
-			break;
-		m = matches[n];
-		p = addpt(lr.min, Pt(0, i * (font->height + Padding)));
-		if(lsel == i)
-			draw(screen, linerect(i), selbg, nil, ZP);
-		string(screen, p, display->black, ZP, font, matches[i].n);
-	}
+	for(i = 0; i < lcount; i++)
+		drawline(i, i == lsel);
+	i = snprint(b, sizeof b, "%d/%d", nmatches, nlines);
+	b[i] = 0;
+	p = Pt(screen->r.max.x - Padding - stringwidth(font, b), screen->r.min.y + Padding);
+	string(screen, p, mfg, ZP, font, b);
 	flushimage(display, 1);
 }
 
@@ -173,14 +178,18 @@ ekeyboard(Rune k)
 		threadexitsall(nil);
 		break;
 	case Kup:
-		if(lsel > 0)
-			--lsel;
-		redraw();
+		if(lsel > 0){
+			drawline(lsel, 0);
+			drawline(--lsel, 1);
+			flushimage(display, 1);
+		}
 		break;
 	case Kdown:
-		if(lsel < (nmatches - 1))
-			++lsel;
-		redraw();
+		if(lsel < (nmatches - 1)){
+			drawline(lsel, 0);
+			drawline(++lsel, 1);
+			flushimage(display, 1);
+		}
 		break;
 	case '\n':
 		if(lsel >= 0){
@@ -211,7 +220,7 @@ ekeyboard(Rune k)
 			inputchanged();
 		}
 	default:
-		if(isprint(k)){
+		if(isprint(k) && ninput < (sizeof input - 1)){
 			input[ninput++] = (char)k; /* XXX */
 			inputchanged();
 		}
@@ -263,6 +272,7 @@ threadmain(int argc, char **argv)
 	a[Eresize].c = mctl->resizec;
 	a[Ekeyboard].c = kctl->c;
 	selbg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xEFEFEFFF);
+	mfg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x999999FF);
 	loff = 0;
 	lsel = 0;
 	eresize();
@@ -275,6 +285,7 @@ threadmain(int argc, char **argv)
 			if(getwindow(display, Refnone) < 0)
 				sysfatal("getwindow: %r");
 			eresize();
+			break;
 		case Ekeyboard:
 			ekeyboard(k);
 			break;
