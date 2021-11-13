@@ -19,6 +19,7 @@ enum
 enum
 {
 	Maxlines = 4096,
+	Tickw = 3,
 	Padding = 4,
 };
 
@@ -26,6 +27,7 @@ Mousectl *mctl;
 Keyboardctl *kctl;
 Image *selbg;
 Image *mfg;
+Image *tick;
 Rectangle ir;
 Rectangle lr;
 int lh;
@@ -117,11 +119,14 @@ redraw(void)
 {
 	char b[10] = {0};
 	Point p;
+	Rectangle r;
 	int i;
 
 	draw(screen, screen->r, display->white, nil, ZP);
 	p = string(screen, addpt(screen->r.min, Pt(Padding, Padding)), display->black, ZP, font, "> ");
-	stringn(screen, p, display->black, ZP, font, input, ninput);
+	p = stringn(screen, p, display->black, ZP, font, input, ninput);
+	r = Rect(p.x, p.y, p.x + Dx(tick->r), p.y + Dy(tick->r));
+	draw(screen, r, tick, nil, ZP);	
 	for(i = 0; i < lcount; i++)
 		drawline(i, i == lsel);
 	i = snprint(b, sizeof b, "%d/%d", nmatches, nlines);
@@ -227,6 +232,24 @@ ekeyboard(Rune k)
 	}
 }
 
+Image*
+createtick(void)
+{
+	Image *t;
+
+	t = allocimage(display, Rect(0, 0, Tickw, font->height), screen->chan, 0, DWhite);
+	if(t == nil)
+		return 0;
+	/* background color */
+	draw(t, t->r, display->white, nil, ZP);
+	/* vertical line */
+	draw(t, Rect(Tickw/2, 0, Tickw/2+1, font->height), display->black, nil, ZP);
+	/* box on each end */
+	draw(t, Rect(0, 0, Tickw, Tickw), display->black, nil, ZP);
+	draw(t, Rect(0, font->height-Tickw, Tickw, font->height), display->black, nil, ZP);
+	return t;
+}
+
 void
 usage(void)
 {
@@ -271,6 +294,7 @@ threadmain(int argc, char **argv)
 	a[Emouse].c = mctl->c;
 	a[Eresize].c = mctl->resizec;
 	a[Ekeyboard].c = kctl->c;
+	tick = createtick();
 	selbg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xEFEFEFFF);
 	mfg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x999999FF);
 	loff = 0;
