@@ -51,7 +51,7 @@ matchcmp(void *a, void *b)
 
 	m = *(Match*)a;
 	n = *(Match*)b;
-	return n.s - m.s;
+	return n.score - m.score;
 }
 
 void
@@ -63,8 +63,8 @@ match(char *pat)
 	for(i = 0; i < nlines; i++){
 		s = fuzzymatch(pat, lines[i]);
 		if(s >= 0){
-			matches[nmatches].n = lines[i];
-			matches[nmatches].s = s;
+			matches[nmatches].name  = lines[i];
+			matches[nmatches].score = s;
 			nmatches++;
 		}
 	}
@@ -85,7 +85,7 @@ loadlines(void)
 		if(s == nil)
 			break;
 		lines[nlines++] = s;
-		matches[nmatches++].n = s;
+		matches[nmatches++].name = s;
 		if(nlines >= Maxlines)
 			break;
 	}
@@ -99,10 +99,10 @@ activate(void)
 
 	m = matches[lsel + loff];
 	if(pmode){
-		print("%s", m.n);
+		print("%s", m.name);
 		threadexitsall(nil);
 	}
-	plumbsendtext(plumbfd, argv0, nil, pwd, m.n);
+	plumbsendtext(plumbfd, argv0, nil, pwd, m.name);
 }
 
 int
@@ -132,7 +132,7 @@ drawline(int i, int sel)
 	if(loff + i >= nmatches)
 		return;
 	draw(screen, linerect(i), sel ? selbg : display->white, nil, ZP);
-	string(screen, addpt(lr.min, Pt(0, i * lh)), display->black, ZP, font, matches[loff + i].n);
+	string(screen, addpt(lr.min, Pt(0, i * lh)), display->black, ZP, font, matches[loff + i].name);
 }
 
 void
@@ -192,7 +192,7 @@ inputchanged(void)
 	}else{
 		nmatches = 0;
 		for(i = 0; i < nlines; i++)
-			matches[nmatches++].n = lines[i];
+			matches[nmatches++].name = lines[i];
 	}
 	if(lsel >= (nmatches - 1))
 		lsel = 0;

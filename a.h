@@ -2,8 +2,8 @@ typedef struct Match Match;
 
 struct Match
 {
-	char *n;
-	int s;
+	char *name;
+	int score;
 };
 
 int fuzzymatch(char *pat, char *s);
