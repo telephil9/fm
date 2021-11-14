@@ -92,6 +92,27 @@ loadlines(void)
 	Bterm(bp);
 }
 
+void
+activate(void)
+{
+	Match m;
+
+	m = matches[lsel + loff];
+	if(pmode){
+		print("%s", m.n);
+		threadexitsall(nil);
+	}
+	plumbsendtext(plumbfd, argv0, nil, pwd, m.n);
+}
+
+int
+lineat(Point p)
+{
+	if(ptinrect(p, lr) == 0)
+		return -1;
+	return (p.y - lr.min.y) / lh;	
+}
+
 Rectangle
 linerect(int i)
 {
@@ -134,23 +155,6 @@ redraw(void)
 	p = Pt(screen->r.max.x - Padding - stringwidth(font, b), screen->r.min.y + Padding);
 	string(screen, p, mfg, ZP, font, b);
 	flushimage(display, 1);
-}
-
-void
-eresize(void)
-{
-	ir = Rect(Padding, Padding, screen->r.max.x - Padding, Padding + font->height + Padding);
-	ir = rectaddpt(ir, screen->r.min);
-	lr = Rect(screen->r.min.x + Padding, ir.max.y, ir.max.x, screen->r.max.y - Padding);
-	lh = font->height + Padding;
-	lcount = Dy(lr) / lh;
-	redraw();
-}
-
-void
-emouse(Mouse *m)
-{
-	USED(m);
 }
 
 int
@@ -207,9 +211,34 @@ changesel(int from, int to)
 }
 
 void
+eresize(void)
+{
+	ir = Rect(Padding, Padding, screen->r.max.x - Padding, Padding + font->height + Padding);
+	ir = rectaddpt(ir, screen->r.min);
+	lr = Rect(screen->r.min.x + Padding, ir.max.y, ir.max.x, screen->r.max.y - Padding);
+	lh = font->height + Padding;
+	lcount = Dy(lr) / lh;
+	redraw();
+}
+
+void
+emouse(Mouse *m)
+{
+	int n;
+
+	if(m->buttons == 1){
+		if((n = lineat(m->xy)) != -1){
+			changesel(lsel, n);
+			lsel = n;
+		}
+	}else if(m->buttons == 4){
+		activate();
+	}
+}
+
+void
 ekeyboard(Rune k)
 {
-	Match m;
 	int osel;
 
 	switch(k){
@@ -250,14 +279,8 @@ ekeyboard(Rune k)
 		}
 		break;
 	case '\n':
-		if(lsel >= 0){
-			m = matches[lsel + loff];
-			if(pmode){
-				print("%s", m.n);
-				threadexitsall(nil);
-			}else
-				plumbsendtext(plumbfd, argv0, nil, pwd, m.n);
-		}
+		if(lsel >= 0)
+			activate();
 		break;
 	case Kesc:
 		if(ninput > 0){
