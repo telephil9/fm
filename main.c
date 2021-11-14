@@ -153,6 +153,30 @@ emouse(Mouse *m)
 	USED(m);
 }
 
+int
+scroll(int lines, int setsel)
+{
+	if(nmatches <= lcount)
+		return 0;
+	if(lines < 0 && loff == 0)
+		return 0;
+	if(lines > 0 && loff + lcount >= nmatches)
+		return 0;
+	loff += lines;
+	if(loff < 0)
+		loff = 0;
+	if(loff + lcount >= nmatches)
+		loff = nmatches - nmatches%lcount;
+	if(setsel){
+		if(lines > 0)
+			lsel = 0;
+		else
+			lsel = lcount - 1;
+	}
+	redraw();
+	return 1;
+}
+
 void
 inputchanged(void)
 {
@@ -170,30 +194,59 @@ inputchanged(void)
 		lsel = 0;
 	if(nmatches == 0)
 		lsel = -1;
+	loff = 0;
 	redraw();
+}
+
+void
+changesel(int from, int to)
+{
+	drawline(from, 0);
+	drawline(to, 1);
+	flushimage(display, 1);
 }
 
 void
 ekeyboard(Rune k)
 {
 	Match m;
+	int osel;
 
 	switch(k){
 	case Kdel:
 		threadexitsall(nil);
 		break;
 	case Kup:
-		if(lsel > 0){
-			drawline(lsel, 0);
-			drawline(--lsel, 1);
-			flushimage(display, 1);
-		}
+		if(lsel == 0 && loff > 0)
+			scroll(-lcount, 1);
+		else if(lsel > 0)
+			changesel(lsel, --lsel);
 		break;
 	case Kdown:
 		if(lsel < (nmatches - 1)){
-			drawline(lsel, 0);
-			drawline(++lsel, 1);
-			flushimage(display, 1);
+			if(lsel == lcount - 1)
+				scroll(lcount, 1);
+			else if(loff + lsel < nmatches - 1)
+				changesel(lsel, ++lsel);
+		}
+		break;
+	case Kpgup:
+		scroll(-lcount, 1);
+		break;
+	case Kpgdown:
+		scroll(lcount, 1);
+		break;
+	case Khome:
+		osel = lsel;
+		lsel = 0;
+		if(scroll(-nmatches, 0) == 0)
+			changesel(osel, lsel);
+		break;
+	case Kend:
+		osel = lsel;
+		lsel = nmatches%lcount - 1;
+		if(scroll(nmatches, 0) == 0){
+			changesel(osel, lsel);
 		}
 		break;
 	case '\n':
