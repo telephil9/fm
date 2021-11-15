@@ -263,6 +263,9 @@ emouse(Mouse *m)
 			n = (m->xy.y - sr.min.y) / lh;
 			scroll(-n, 1);
 		}else if(m->buttons == 2){
+			n = (m->xy.y - sr.min.y) * nmatches / Dy(sr);
+			loff = n;
+			redraw();
 		}else if(m->buttons == 4){
 			n = (m->xy.y - sr.min.y) / lh;
 			scroll(n, 1);
