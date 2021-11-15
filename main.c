@@ -36,6 +36,7 @@ int lh;
 int lcount;
 int loff;
 int lsel;
+int scrollsize;
 int pmode;
 int plumbfd;
 char* lines[Maxlines];
@@ -178,12 +179,13 @@ scroll(int lines, int setsel)
 		return 0;
 	if(lines < 0 && loff == 0)
 		return 0;
-	if(lines > 0 && loff + lcount >= nmatches)
+	if(lines > 0 && loff + lcount >= nmatches){
 		return 0;
+	}
 	loff += lines;
 	if(loff < 0)
 		loff = 0;
-	if(loff + lcount >= nmatches)
+	if(loff + nmatches%lcount >= nmatches)
 		loff = nmatches - nmatches%lcount;
 	if(setsel){
 		if(lines > 0)
@@ -233,6 +235,7 @@ eresize(void)
 	lr = Rect(sr.max.x + 2*Padding, ir.max.y, ir.max.x, screen->r.max.y - Padding);
 	lh = font->height + Padding;
 	lcount = Dy(lr) / lh;
+	scrollsize = mousescrollsize(lcount);
 	redraw();
 }
 
@@ -241,13 +244,29 @@ emouse(Mouse *m)
 {
 	int n;
 
-	if(m->buttons == 1){
-		if((n = lineat(m->xy)) != -1){
-			changesel(lsel, n);
-			lsel = n;
+	if(ptinrect(m->xy, lr)){
+		if(m->buttons == 1){
+			n = lineat(m->xy);
+			if(n != -1 && (loff + n) < nmatches){
+				changesel(lsel, n);
+				lsel = n;
+			}
+		}else if(m->buttons == 4){
+			activate();
+		}else if(m->buttons == 8){
+			scroll(-scrollsize, 1);
+		}else if(m->buttons == 16){
+			scroll(scrollsize, 1);
 		}
-	}else if(m->buttons == 4){
-		activate();
+	}else if(ptinrect(m->xy, sr)){
+		if(m->buttons == 1){
+			n = (m->xy.y - sr.min.y) / lh;
+			scroll(-n, 1);
+		}else if(m->buttons == 2){
+		}else if(m->buttons == 4){
+			n = (m->xy.y - sr.min.y) / lh;
+			scroll(n, 1);
+		}
 	}
 }
 
