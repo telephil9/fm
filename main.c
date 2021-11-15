@@ -245,14 +245,14 @@ emouse(Mouse *m)
 	int n;
 
 	if(ptinrect(m->xy, lr)){
-		if(m->buttons == 1){
+		if(m->buttons == 1 || m->buttons == 4){
 			n = lineat(m->xy);
 			if(n != -1 && (loff + n) < nmatches){
 				changesel(lsel, n);
 				lsel = n;
 			}
-		}else if(m->buttons == 4){
-			activate();
+			if(m->buttons == 4)
+				activate();
 		}else if(m->buttons == 8){
 			scroll(-scrollsize, 1);
 		}else if(m->buttons == 16){
