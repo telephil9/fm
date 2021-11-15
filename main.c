@@ -337,6 +337,16 @@ ekeyboard(Rune k)
 			ninput = 0;
 			inputchanged();
 		}
+		break;
+	case Ketb: /* ^W */
+		if(ninput > 0){
+			--ninput;
+			while(ninput > 0 && isalnum(input[ninput]))
+				--ninput;
+			input[++ninput] = '\0';
+			inputchanged();
+		}
+		break;
 	default:
 		if(isprint(k) && ninput < (sizeof input - 1)){
 			input[ninput++] = (char)k; /* XXX */
