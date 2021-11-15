@@ -276,7 +276,7 @@ emouse(Mouse *m)
 void
 ekeyboard(Rune k)
 {
-	int osel;
+	int osel, p;
 
 	switch(k){
 	case Kdel:
@@ -340,10 +340,13 @@ ekeyboard(Rune k)
 		break;
 	case Ketb: /* ^W */
 		if(ninput > 0){
-			--ninput;
-			while(ninput > 0 && isalnum(input[ninput]))
-				--ninput;
-			input[++ninput] = '\0';
+			p = ninput - 1;
+			for(; p >= 0 && !isalnum(input[p]); --p)
+				;
+			for(; p > 0 && isalnum(input[p-1]); --p)
+				;
+			ninput = p >= 0 ? p : 0;
+			input[ninput] = '\0';
 			inputchanged();
 		}
 		break;
