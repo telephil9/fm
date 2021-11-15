@@ -1,13 +1,13 @@
 fm
 ===
-fm provides a gui to select an item from a list using a fuzzy matching algorithm.
+fm provides a gui to select an item from a list using a fuzzy matching algorithm.  
 When an item is selected, it is sent to the plumber `send` port unless the `-p` option
 is used in which case the item name is printed on standard output and the application exits.
 
 ![fm](fm.png)
 
-Left-click an item to select it
-Right-click to activate the selected item
+Left-click an item to select it.  
+Right-click to activate the selected item.
 
 Keyboard shortcuts:
 - Arrow up / down change selection
@@ -21,7 +21,7 @@ Keyboard shortcuts:
 
 Usage:
 -------
-Install with usual ``mk install``
+Install with usual ``mk install``  
 Run: ``... | fm [-p]``
 
 The provided `b` script gives a usage example.
