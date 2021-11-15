@@ -21,6 +21,7 @@ enum
 	Maxlines = 4096,
 	Tickw = 3,
 	Padding = 4,
+	Scrollwidth = 12,
 };
 
 Mousectl *mctl;
@@ -29,6 +30,7 @@ Image *selbg;
 Image *mfg;
 Image *tick;
 Rectangle ir;
+Rectangle sr;
 Rectangle lr;
 int lh;
 int lcount;
@@ -140,14 +142,26 @@ redraw(void)
 {
 	char b[10] = {0};
 	Point p;
-	Rectangle r;
-	int i;
+	Rectangle r, scrposr;
+	int i, h, y, ye;
 
 	draw(screen, screen->r, display->white, nil, ZP);
 	p = string(screen, addpt(screen->r.min, Pt(Padding, Padding)), display->black, ZP, font, "> ");
 	p = stringn(screen, p, display->black, ZP, font, input, ninput);
 	r = Rect(p.x, p.y, p.x + Dx(tick->r), p.y + Dy(tick->r));
-	draw(screen, r, tick, nil, ZP);	
+	draw(screen, r, tick, nil, ZP);
+	draw(screen, sr, mfg, nil, ZP);
+	border(screen, sr, 0, display->black, ZP);
+	if(nmatches > 0){
+		h = ((double)lcount / nmatches) * Dy(sr);
+		y = ((double)loff / nmatches) * Dy(sr);
+		ye = sr.min.y + y + h - 1;
+		if(ye >= sr.max.y)
+			ye = sr.max.y - 1;
+		scrposr = Rect(sr.min.x + 1, sr.min.y + y + 1, sr.max.x - 1, ye);
+	}else
+		scrposr = insetrect(sr, -1);
+	draw(screen, scrposr, display->white, nil, ZP);
 	for(i = 0; i < lcount; i++)
 		drawline(i, i == lsel);
 	i = snprint(b, sizeof b, "%d/%d", nmatches, nlines);
@@ -215,7 +229,8 @@ eresize(void)
 {
 	ir = Rect(Padding, Padding, screen->r.max.x - Padding, Padding + font->height + Padding);
 	ir = rectaddpt(ir, screen->r.min);
-	lr = Rect(screen->r.min.x + Padding, ir.max.y, ir.max.x, screen->r.max.y - Padding);
+	sr = Rect(screen->r.min.x + Padding, ir.max.y, screen->r.min.x + Padding + Scrollwidth, screen->r.max.y - Padding - 1);
+	lr = Rect(sr.max.x + 2*Padding, ir.max.y, ir.max.x, screen->r.max.y - Padding);
 	lh = font->height + Padding;
 	lcount = Dy(lr) / lh;
 	redraw();
