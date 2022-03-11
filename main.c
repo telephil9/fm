@@ -8,6 +8,7 @@
 #include <keyboard.h>
 #include <plumb.h>
 #include "a.h"
+#include "theme.h"
 
 enum
 {
@@ -26,6 +27,8 @@ enum
 
 Mousectl *mctl;
 Keyboardctl *kctl;
+Image *bg;
+Image *fg;
 Image *selbg;
 Image *mfg;
 Image *tick;
@@ -134,8 +137,8 @@ drawline(int i, int sel)
 {
 	if(loff + i >= nmatches)
 		return;
-	draw(screen, linerect(i), sel ? selbg : display->white, nil, ZP);
-	string(screen, addpt(lr.min, Pt(0, i * lh)), display->black, ZP, font, matches[loff + i].name);
+	draw(screen, linerect(i), sel ? selbg : bg, nil, ZP);
+	string(screen, addpt(lr.min, Pt(0, i * lh)), fg, ZP, font, matches[loff + i].name);
 }
 
 void
@@ -146,13 +149,13 @@ redraw(void)
 	Rectangle r, scrposr;
 	int i, h, y, ye;
 
-	draw(screen, screen->r, display->white, nil, ZP);
-	p = string(screen, addpt(screen->r.min, Pt(Padding, Padding)), display->black, ZP, font, "> ");
-	p = stringn(screen, p, display->black, ZP, font, input, ninput);
+	draw(screen, screen->r, bg, nil, ZP);
+	p = string(screen, addpt(screen->r.min, Pt(Padding, Padding)), fg, ZP, font, "> ");
+	p = stringn(screen, p, fg, ZP, font, input, ninput);
 	r = Rect(p.x, p.y, p.x + Dx(tick->r), p.y + Dy(tick->r));
 	draw(screen, r, tick, nil, ZP);
 	draw(screen, sr, mfg, nil, ZP);
-	border(screen, sr, 0, display->black, ZP);
+	border(screen, sr, 0, fg, ZP);
 	if(nmatches > 0){
 		h = ((double)lcount / nmatches) * Dy(sr);
 		y = ((double)loff / nmatches) * Dy(sr);
@@ -162,7 +165,7 @@ redraw(void)
 		scrposr = Rect(sr.min.x + 1, sr.min.y + y + 1, sr.max.x - 1, ye);
 	}else
 		scrposr = insetrect(sr, -1);
-	draw(screen, scrposr, display->white, nil, ZP);
+	draw(screen, scrposr, bg, nil, ZP);
 	for(i = 0; i < lcount; i++)
 		drawline(i, i == lsel);
 	i = snprint(b, sizeof b, "%d/%d", nmatches, nlines);
@@ -367,13 +370,33 @@ createtick(void)
 	if(t == nil)
 		return 0;
 	/* background color */
-	draw(t, t->r, display->white, nil, ZP);
+	draw(t, t->r, bg, nil, ZP);
 	/* vertical line */
-	draw(t, Rect(Tickw/2, 0, Tickw/2+1, font->height), display->black, nil, ZP);
+	draw(t, Rect(Tickw/2, 0, Tickw/2+1, font->height), fg, nil, ZP);
 	/* box on each end */
-	draw(t, Rect(0, 0, Tickw, Tickw), display->black, nil, ZP);
-	draw(t, Rect(0, font->height-Tickw, Tickw, font->height), display->black, nil, ZP);
+	draw(t, Rect(0, 0, Tickw, Tickw), fg, nil, ZP);
+	draw(t, Rect(0, font->height-Tickw, Tickw, font->height), fg, nil, ZP);
 	return t;
+}
+
+void
+initcolors(void)
+{
+	Theme *theme;
+
+	theme = loadtheme();
+	if(theme != nil){
+		bg = theme->back;
+		fg = theme->text;
+		selbg = theme->border;
+		mfg = theme->border;
+	}else{
+		bg = display->white;
+		fg = display->black;
+		selbg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xEFEFEFFF);
+		mfg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x999999FF);
+	}
+	tick = createtick();
 }
 
 void
@@ -420,9 +443,7 @@ threadmain(int argc, char **argv)
 	a[Emouse].c = mctl->c;
 	a[Eresize].c = mctl->resizec;
 	a[Ekeyboard].c = kctl->c;
-	tick = createtick();
-	selbg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xEFEFEFFF);
-	mfg = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x999999FF);
+	initcolors();
 	loff = 0;
 	lsel = 0;
 	eresize();
