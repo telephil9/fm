@@ -19,7 +19,6 @@ enum
 
 enum
 {
-	Maxlines = 4096,
 	Tickw = 3,
 	Padding = 4,
 	Scrollwidth = 12,
@@ -42,13 +41,36 @@ int lsel;
 int scrollsize;
 int pmode;
 int plumbfd;
-char* lines[Maxlines];
+char** lines;
 int nlines;
-Match matches[Maxlines];
+int maxlines;
+Match* matches;
 int nmatches;
 char input[255] = {0};
 int ninput = 0;
 char pwd[255] = {0};
+
+void*
+emalloc(ulong size)
+{
+	void *p;
+
+	p = malloc(size);
+	if(p == nil)
+		sysfatal("malloc: %r");
+	return p;
+}
+
+void*
+erealloc(void *p, ulong size)
+{
+	void *q;
+
+	q = realloc(p, size);
+	if(q == nil)
+		sysfatal("realloc: %r");
+	return q;
+}
 
 int
 matchcmp(void *a, void *b)
@@ -85,6 +107,10 @@ loadlines(void)
 	char *s;
 
 	nlines = 0;
+	nmatches = 0;
+	maxlines = 4096;
+	lines = emalloc(maxlines * sizeof *lines);
+	matches = emalloc(maxlines * sizeof *matches);
 	bp = Bfdopen(0, OREAD);
 	for(;;){
 		s = Brdstr(bp, '\n', 1);
@@ -92,8 +118,11 @@ loadlines(void)
 			break;
 		lines[nlines++] = s;
 		matches[nmatches++].name = s;
-		if(nlines >= Maxlines)
-			break;
+		if(nlines >= maxlines || nmatches >= maxlines){
+			maxlines *= 1.5;
+			lines = erealloc(lines, maxlines * sizeof *lines);
+			matches = erealloc(matches, maxlines * sizeof *matches);
+		}
 	}
 	Bterm(bp);
 }
