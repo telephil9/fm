@@ -284,7 +284,8 @@ emouse(Mouse *m)
 				lsel = n;
 			}
 			if(m->buttons == 4)
-				activate();
+				if(nmatches > 0 && lsel >= 0)
+					activate();
 		}else if(m->buttons == 8){
 			scroll(-scrollsize, 1);
 		}else if(m->buttons == 16){
