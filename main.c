@@ -253,7 +253,8 @@ inputchanged(void)
 void
 changesel(int from, int to)
 {
-	drawline(from, 0);
+	if(from >= 0)
+		drawline(from, 0);
 	drawline(to, 1);
 	flushimage(display, 1);
 }
